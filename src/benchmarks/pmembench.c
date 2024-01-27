@@ -378,6 +378,7 @@ pmembench_run_worker(struct benchmark *bench, struct worker_info *winfo)
 	uint64_t i;
 	uint64_t ops = winfo->nops;
 	benchmark_time_t start, stop;
+	//zyu: run every operation in a single worker
 	for (i = 0; i < ops; i++) {
 		if (bench->info->op_init) {
 			if (bench->info->op_init(bench, &winfo->opinfo[i]))
@@ -385,6 +386,7 @@ pmembench_run_worker(struct benchmark *bench, struct worker_info *winfo)
 		}
 
 		benchmark_time_get(&start);
+		//zyu: critical part
 		if (bench->info->operation(bench, &winfo->opinfo[i]))
 			return -1;
 		benchmark_time_get(&stop);
@@ -435,7 +437,14 @@ pmembench_print_header(struct pmembench *pb, struct benchmark *bench,
 	}
 	printf("\n");
 }
+/*
+	zyu: gona to print operations
 
+*/
+static void pmembench_print_operations(void){
+	printf("cycle;operation;address;data;thread\n");
+
+}
 /*
  * pmembench_print_results -- print benchmark's results
  */
@@ -520,6 +529,7 @@ pmembench_init_workers(struct benchmark_worker **workers, size_t nworkers,
 		}
 		workers[i]->bench = bench;
 		workers[i]->args = args;
+		// zyu: set worker function
 		workers[i]->func = pmembench_run_worker;
 		workers[i]->init = bench->info->init_worker;
 		workers[i]->exit = bench->info->free_worker;
@@ -571,13 +581,16 @@ pmembench_get_results(struct benchmark_worker **workers, size_t nworkers,
 	benchmark_time_diff(&dummy, &start, &stop);
 	nsecs_dummy = benchmark_time_get_nsecs(&dummy);
 	secs_dummy = benchmark_time_get_secs(&dummy);
+	//zyu: workers
 	for (i = 0; i < nworkers; i++) {
+		//zyu: operations
 		for (j = 0; j < workers[i]->info.nops; j++) {
 			nsecs = benchmark_time_get_nsecs(
 				&workers[i]->info.opinfo[j].t_diff);
 			if (nsecs > nsecs_dummy)
 				nsecs -= nsecs_dummy;
-
+			//zyu: print latency 
+			// printf("%ld ",nsecs);
 			workers_times[i] += benchmark_time_get_secs(
 				&workers[i]->info.opinfo[j].t_diff);
 			if (workers_times[i] > secs_dummy)
@@ -589,6 +602,8 @@ pmembench_get_results(struct benchmark_worker **workers, size_t nworkers,
 				stats->min = nsecs;
 			stats->avg += nsecs;
 			count++;
+			//zyu: print thread index
+			// printf("%d\n",workers[i]->info.index);
 		}
 	}
 	assert(count != 0);
@@ -892,6 +907,7 @@ pmembench_remove_file(const char *path)
  * pmembench_run -- runs one benchmark. Parses arguments and performs
  * specific functions.
  */
+ // zyu: probably begin here
 static int
 pmembench_run(struct pmembench *pb, struct benchmark *bench)
 {
@@ -952,10 +968,11 @@ pmembench_run(struct pmembench *pb, struct benchmark *bench)
 		pmembench_print_help_single(bench);
 		goto out;
 	}
-
-	pmembench_print_header(pb, bench, clovec);
+	//zyu: unset print
+	//pmembench_print_header(pb, bench, clovec);
 
 	size_t args_i;
+	// todo
 	for (args_i = 0; args_i < clovec->nargs; args_i++) {
 		args = clo_vec_get_args(clovec, args_i);
 		if (args == NULL) {
@@ -996,6 +1013,7 @@ pmembench_run(struct pmembench *pb, struct benchmark *bench)
 			if (bench->info->rm_file) {
 				ret = pmembench_remove_file(args->fname);
 				if (ret != 0) {
+					//zyu: if thread has contention
 					perror("removing file failed");
 					goto out;
 				}
@@ -1016,7 +1034,7 @@ pmembench_run(struct pmembench *pb, struct benchmark *bench)
 			workers = malloc(args->n_threads *
 					sizeof(struct benchmark_worker *));
 			assert(workers != NULL);
-
+			// zyu: set worker function to pointer
 			if ((ret = pmembench_init_workers(workers, n_threads,
 						n_ops, bench, args)) != 0) {
 				if (bench->info->exit)
@@ -1058,11 +1076,14 @@ pmembench_run(struct pmembench *pb, struct benchmark *bench)
 		struct latency latency;
 		pmembench_get_total_results(stats, workers_times, &total,
 					&latency, args->repeats, n_threads);
+		/*	zyu:unset print
 		pmembench_print_results(bench, args, n_threads, n_ops,
 							&total, &latency);
+		*/
 		free(stats);
 		free(workers_times);
 	}
+	
 out:
 out_release_args:
 	clo_vec_free(clovec);
@@ -1195,7 +1216,7 @@ out:
 	config_reader_free(cr);
 	return ret;
 }
-
+// zyu: main function
 int
 main(int argc, char *argv[])
 {
@@ -1227,6 +1248,7 @@ main(int argc, char *argv[])
 	}
 	int fexists = access(bench_name, R_OK) == 0;
 	struct benchmark *bench = pmembench_get_bench(bench_name);
+	// to think
 	if (NULL != bench)
 		ret = pmembench_run(pb, bench);
 	else if (fexists)

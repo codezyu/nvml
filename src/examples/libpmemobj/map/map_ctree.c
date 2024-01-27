@@ -82,7 +82,6 @@ map_ctree_insert(PMEMobjpool *pop, TOID(struct map) map,
 {
 	TOID(struct ctree_map) ctree_map;
 	TOID_ASSIGN(ctree_map, map.oid);
-
 	return ctree_map_insert(pop, ctree_map, key, value);
 }
 

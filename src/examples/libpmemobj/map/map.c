@@ -177,6 +177,8 @@ map_clear(struct map_ctx *mapc, TOID(struct map) map)
 PMEMoid
 map_get(struct map_ctx *mapc, TOID(struct map) map, uint64_t key)
 {
+	printf("r ");
+	fflush(stdout);
 	ABORT_NOT_IMPLEMENTED(mapc, get);
 	return mapc->ops->get(mapc->pop, map, key);
 }

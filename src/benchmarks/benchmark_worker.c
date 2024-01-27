@@ -87,7 +87,7 @@ thread_func(void *arg)
 
 	worker_state_wait_for_transition(worker,
 		WORKER_STATE_INITIALIZED, WORKER_STATE_RUN);
-
+	// zyu: run pmembench
 	worker->ret = worker->func(worker->bench, &worker->info);
 
 	worker_state_transition(worker,
@@ -121,7 +121,7 @@ benchmark_worker_alloc(void)
 
 	if (pthread_cond_init(&w->cond, NULL))
 		goto err_free_worker;
-
+	//zyu : this is the function that actually runs the benchmark in thread
 	if (pthread_create(&w->thread, NULL, thread_func, w))
 		goto err_destroy_cond;
 
@@ -186,6 +186,7 @@ benchmark_worker_exit(struct benchmark_worker *worker)
 /*
  * benchmark_worker_run -- run benchmark worker
  */
+// zyu : this is the function that actually runs the benchmark
 int
 benchmark_worker_run(struct benchmark_worker *worker)
 {

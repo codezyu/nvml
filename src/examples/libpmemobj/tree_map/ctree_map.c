@@ -204,7 +204,6 @@ ctree_map_insert(PMEMobjpool *pop, TOID(struct ctree_map) map,
 {
 	struct tree_map_entry *p = &D_RW(map)->root;
 	int ret = 0;
-
 	/* descend the path until a best matching key is found */
 	TOID(struct tree_map_node) node;
 	while (!OID_IS_NULL(p->slot) &&

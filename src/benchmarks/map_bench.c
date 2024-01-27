@@ -43,6 +43,7 @@
 #include "map_rbtree.h"
 #include "map_hashmap_atomic.h"
 #include "map_hashmap_tx.h"
+#include <stdint.h>
 
 #define FACTOR	2
 #define ALLOC_OVERHEAD	64
@@ -85,7 +86,7 @@ struct map_bench_args {
 };
 
 struct map_bench_worker {
-	uint64_t *keys;
+	uint64_t *keys;//zyu: it's a pointer
 	size_t nkeys;
 };
 
@@ -168,7 +169,17 @@ static struct benchmark_clo map_bench_clos[] = {
 		.type		= CLO_TYPE_FLAG,
 	},
 };
+//zyu
+static void 
+print_value_address(size_t size,PMEMoid value){
+	//zyu: value address
+	char *ptr = (char *)pmemobj_direct(value);
+	printf(" %p ",pmemobj_direct(value));
+	for (size_t i = 0; i < size; i++) {
+		printf("%02x", (unsigned char)ptr[i]);
+	}
 
+}
 /*
  * mutex_lock_nofail -- locks mutex and aborts if locking failed
  */
@@ -286,6 +297,8 @@ map_insert_alloc_op(struct map_bench *map_bench, uint64_t key)
 	TX_BEGIN(map_bench->pop) {
 		PMEMoid oid = pmemobj_tx_alloc(map_bench->args->dsize,
 				OBJ_TYPE_NUM);
+		//pmemobj_type_num
+		print_value_address(map_bench->args->dsize,oid);
 		ret = map_insert(map_bench->mapc, map_bench->map, key, oid);
 	} TX_ONABORT {
 		ret = -1;
@@ -293,15 +306,22 @@ map_insert_alloc_op(struct map_bench *map_bench, uint64_t key)
 
 	return ret;
 }
-
 /*
  * map_insert_root_op -- insert root object to map
  */
 static int
 map_insert_root_op(struct map_bench *map_bench, uint64_t key)
 {
+	//pmemobj_type_num
+	print_value_address(sizeof(map_bench->root),map_bench->root_oid);
 	return map_insert(map_bench->mapc, map_bench->map, key,
 			map_bench->root_oid);
+}
+uint64_t get_cycles()
+{
+    unsigned int lo, hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
 }
 
 /*
@@ -310,16 +330,20 @@ map_insert_root_op(struct map_bench *map_bench, uint64_t key)
 static int
 map_insert_op(struct benchmark *bench, struct operation_info *info)
 {
+	//见上
 	struct map_bench *map_bench = pmembench_get_priv(bench);
 	struct map_bench_worker *tworker = info->worker->priv;
+	// should only have key
 	uint64_t key = tworker->keys[info->index];
-
 	mutex_lock_nofail(&map_bench->lock);
-
+	uint64_t cycles = get_cycles();
+	//zyu: CPU cycles and operation type
+	printf("%lu W", cycles);
 	int ret = map_bench->insert(map_bench, key);
-
+	//zyu: thread id
+	printf(" %u\n",info->worker->index);
+	fflush(stdout);
 	mutex_unlock_nofail(&map_bench->lock);
-
 	return ret;
 }
 
@@ -544,7 +568,7 @@ map_common_init(struct benchmark *bench, struct benchmark_args *args)
 			"requires single thread\n");
 		goto err_free_bench;
 	}
-
+	//zyu: 这里定义insert函数
 	if (map_bench->margs->alloc) {
 		map_bench->insert = map_insert_alloc_op;
 		map_bench->remove = map_remove_free_op;

@@ -198,6 +198,7 @@ struct benchmark_clo
 struct worker_info
 {
 	unsigned int index;		/* index of worker thread */
+	// zyu: operation array and number of operations
 	struct operation_info *opinfo;	/* operation info structure */
 	size_t nops;			/* number of operations */
 	void *priv;			/* worker's private data */

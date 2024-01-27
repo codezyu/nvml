@@ -22,7 +22,7 @@ then
 	$bin -h
 elif [[ $action == '--small' ]]
 then
-	$bin -f $dir -d 128 -n 1024 -t 2 -r 1 -T ctree   
+	$bin -f $dir -d 128 -n 1024 -t 2 -r 1 -T ctree 
 elif [[ $action == '--med' ]]
 then
 	$bin -f $dir -d 128 -n 10240 -t 2 -r 2 -T ctree   
@@ -30,6 +30,7 @@ elif [[ $action == '--large' ]]
 then
 	$bin -f $dir -d 128 -n 102400 -t 4 -r 2 -T ctree   
 else
+	echo "Usage: ./run_ctree.sh [--small|--med|--large|--trace|-h]"
 	exit
 fi
 #strace -f -e trace=write ./src/benchmarks/pmembench map_insert -f $dir -d 128 -n 1 -t 1 -r 1 -T ctree   
